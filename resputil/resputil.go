@@ -72,6 +72,9 @@ func JSON(w http.ResponseWriter, responses ...interface{}) {
 		switch value := response.(type) {
 		case nil:
 			continue
+		case func() (interface{}, error):
+			result, err := value()
+			JSON(w, result, err)
 		case func() error:
 			err := value()
 			if err == nil {
