@@ -88,5 +88,7 @@ func JSON(w http.ResponseWriter, responses ...interface{}) {
 		// Exit on the first output...
 		return
 	}
-	respond(false)
+	respond(struct {
+		Response interface{} `json:"response"`
+	}{false})
 }
