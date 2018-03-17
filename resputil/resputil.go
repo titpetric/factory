@@ -86,6 +86,7 @@ func JSON(w http.ResponseWriter, responses ...interface{}) {
 			}{response})
 		}
 		// Exit on the first output...
-		break
+		return
 	}
+	respond(false)
 }
