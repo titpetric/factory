@@ -74,7 +74,7 @@ func JSON(w http.ResponseWriter, responses ...interface{}) {
 			continue
 		case func() (interface{}, error):
 			result, err := value()
-			JSON(w, result, err)
+			JSON(w, err, result)
 		case func() error:
 			err := value()
 			if err == nil {
