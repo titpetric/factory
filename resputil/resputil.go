@@ -113,9 +113,13 @@ func JSON(w http.ResponseWriter, responses ...interface{}) {
 			if !value {
 				continue
 			}
-			respond(response)
+			respond(value)
+		case errorMessage:
+			respond(value)
+		case successMessage:
+			respond(value)
 		default:
-			respond(response)
+			respond(value)
 		}
 		// Exit on the first output...
 		return
