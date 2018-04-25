@@ -68,7 +68,9 @@ func TestTests(t *testing.T) {
 		Name string `json:"name"`
 	}{"Tit Petric"}, `{"response":{"name":"Tit Petric"}}`)
 
-	Pretty(true)
+	SetConfig(Options{
+		Pretty: true,
+	})
 
 	// Test pretty printing
 	testCase("custom struct", struct {
@@ -78,7 +80,10 @@ func TestTests(t *testing.T) {
 		"name": "Tit Petric"
 	}
 }`)
-	Trace(true)
+	SetConfig(Options{
+		Pretty: true,
+		Trace:  true,
+	})
 
 	// Test pretty printing with tracing (no trace because stdlib error)
 	testCase("custom struct", struct {

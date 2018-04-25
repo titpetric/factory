@@ -8,22 +8,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Exported error messages
 const (
 	E_EMPTY_TRACE = "no stack trace available"
 )
-
-var config struct {
-	Pretty bool // formats JSON output with indentation
-	Trace  bool // prints a stack backtrace if exists (pkg/errors)
-}
-
-func Pretty(pretty bool) {
-	config.Pretty = pretty
-}
-
-func Trace(trace bool) {
-	config.Trace = trace
-}
 
 type stackTracer interface {
 	StackTrace() errors.StackTrace
@@ -40,6 +28,19 @@ type errorMessage struct {
 		Message string `json:"message"`
 		Trace   string `json:"trace,omitempty"`
 	} `json:"error"`
+}
+
+// Options struct / configuration parameters
+type Options struct {
+	Pretty bool // formats JSON output with indentation
+	Trace  bool // prints a stack backtrace if exists (pkg/errors)
+}
+
+var config Options
+
+// SetConfig updates package options in use
+func SetConfig(options Options) {
+	config = options
 }
 
 // getTrace prints the first available stack trace if any
