@@ -3,7 +3,7 @@
 The package provides utilities to respond with some structured JSON payloads.
 By default, anything you pass to `JSON` will be encapsulated depending on the type.
 
-~~~
+~~~go
 func JSON(w http.ResponseWriter, responses ...interface{}) {
 ~~~
 
@@ -39,7 +39,7 @@ logical units, that have different responsibilities:
 
 Taking advantage of scope, this may look like this:
 
-~~~
+~~~go
 mux.HandleFunc("/api/*", func(w http.ResponseWriter, r *http.Request) {
 	owner := login.Decode(r)
 	call := chi.URLParam(r, "*")
@@ -83,7 +83,7 @@ Since `validate` and `process` are closures, they may access anything within the
 their parent function. This means that you can have a `RequestParameters` struct, a response
 struct, and actually extend the logic of this further. This would be one possible way:
 
-~~~
+~~~go
 	// Parameters
 	params := &CommentListThread{
 		CommentList: &CommentList{
@@ -146,7 +146,7 @@ be encoded into JSON and written to the HTTP output.
 The pattern of use also allows a more functional approach to what you're outputting. For example,
 if you favor something closer to an ORM approach, then you could do something more similar to this:
 
-~~~
+~~~go
 func (p *ProjectHTTP) create(w http.ResponseWriter, r *http.Request) {
 	project := Project{}.New()
 	resputil.JSON(
