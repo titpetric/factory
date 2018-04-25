@@ -58,11 +58,18 @@ func TestTests(t *testing.T) {
 	}, `{"response":"string response"}`)
 
 	testCase("success default", Success(), `{"success":{"message":"OK"}}`)
+	testCase("success default", OK(), `{"success":{"message":"OK"}}`)
 	testCase("success custom", Success("string"), `{"success":{"message":"string"}}`)
 
-	testCase("error default", Error(), `{"error":{"message":"Unknown error"}}`)
-	testCase("error custom", Error(errors.New("string")), `{"error":{"message":"string"}}`)
+	testCase("error ptr nil", new(error), `{"response":false}`)
+	{
+		err := errors.New("string")
+		testCase("error ptr ok", &err, `{"error":{"message":"string"}}`)
+	}
 	testCase("error stdlib", errors.New("string"), `{"error":{"message":"string"}}`)
+	{
+		testCase("error stdlib nil", func() interface{} { return func() error { return nil }() }(), `{"response":false}`)
+	}
 
 	testCase("custom struct", struct {
 		Name string `json:"name"`

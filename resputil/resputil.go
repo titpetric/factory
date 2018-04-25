@@ -56,8 +56,8 @@ func getTrace(errs ...error) string {
 	return E_EMPTY_TRACE
 }
 
-// Error returns a structured error for API responses
-func Error(err ...error) errorMessage {
+// error returns a structured error for API responses
+func errorResponse(err ...error) errorMessage {
 	response := errorMessage{}
 	// add stack trace to the response if available and enabled
 	response.Error.Message = "Unknown error"
@@ -80,6 +80,10 @@ func Success(success ...string) successMessage {
 	return response
 }
 
+func OK() successMessage {
+	return Success()
+}
+
 // JSON responds with the first non-nil payload, formats error messages
 func JSON(w http.ResponseWriter, responses ...interface{}) {
 	respond := func(payload interface{}) {
@@ -92,9 +96,9 @@ func JSON(w http.ResponseWriter, responses ...interface{}) {
 			return json.Marshal(payload)
 		}
 		switch value := payload.(type) {
-		case errorMessage:
+		case error:
 			// main key is "error"
-			result, err = encode(value)
+			result, err = encode(errorResponse(errors.WithStack(value)))
 		case successMessage:
 			// main key is "success"
 			result, err = encode(value)
@@ -105,7 +109,7 @@ func JSON(w http.ResponseWriter, responses ...interface{}) {
 			}{value})
 		}
 		if err != nil {
-			result, _ = encode(Error(errors.WithStack(err)))
+			result, _ = encode(errorResponse(errors.WithStack(err)))
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(result)
@@ -114,6 +118,7 @@ func JSON(w http.ResponseWriter, responses ...interface{}) {
 	for _, response := range responses {
 		switch value := response.(type) {
 		case nil:
+			// this will match a nil error
 			continue
 		case func() (interface{}, error):
 			result, err := value()
@@ -123,9 +128,14 @@ func JSON(w http.ResponseWriter, responses ...interface{}) {
 			if err == nil {
 				continue
 			}
-			respond(Error(err))
+			respond(err)
+		case *error:
+			if *value == nil {
+				continue
+			}
+			respond(*value)
 		case error:
-			respond(Error(value))
+			respond(value)
 		case string:
 			if value == "" {
 				continue
@@ -135,8 +145,6 @@ func JSON(w http.ResponseWriter, responses ...interface{}) {
 			if !value {
 				continue
 			}
-			respond(value)
-		case errorMessage:
 			respond(value)
 		case successMessage:
 			respond(value)
