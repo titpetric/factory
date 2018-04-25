@@ -4,10 +4,26 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/http/httputil"
 
 	"github.com/pkg/errors"
 )
+
+const (
+	E_EMPTY_TRACE = "no stack trace available"
+)
+
+var config struct {
+	Pretty bool // formats JSON output with indentation
+	Trace  bool // prints a stack backtrace if exists (pkg/errors)
+}
+
+func Pretty(pretty bool) {
+	config.Pretty = pretty
+}
+
+func Trace(trace bool) {
+	config.Trace = trace
+}
 
 type stackTracer interface {
 	StackTrace() errors.StackTrace
@@ -26,16 +42,30 @@ type errorMessage struct {
 	} `json:"error"`
 }
 
-// Error returns a structured error for API responses
-func Error(err error) errorMessage {
-	response := errorMessage{}
-	// add stack trace to the response if available
-	terr, ok := errors.Cause(err).(stackTracer)
-	if ok {
-		st := terr.StackTrace()
-		response.Error.Trace = fmt.Sprintf("%+v", st)
+// getTrace prints the first available stack trace if any
+func getTrace(errs ...error) string {
+	for _, err := range errs {
+		if err != nil {
+			terr, ok := err.(stackTracer)
+			if ok {
+				return fmt.Sprintf("%+v", terr.StackTrace())
+			}
+		}
 	}
-	response.Error.Message = fmt.Sprintf("%s", err)
+	return E_EMPTY_TRACE
+}
+
+// Error returns a structured error for API responses
+func Error(err ...error) errorMessage {
+	response := errorMessage{}
+	// add stack trace to the response if available and enabled
+	response.Error.Message = "Unknown error"
+	if len(err) > 0 {
+		if config.Trace {
+			response.Error.Trace = getTrace(errors.Cause(err[0]), err[0])
+		}
+		response.Error.Message = err[0].Error()
+	}
 	return response
 }
 
@@ -49,24 +79,16 @@ func Success(success ...string) successMessage {
 	return response
 }
 
-// Debug request
-func Debug(w http.ResponseWriter, r *http.Request) {
-	output, err := httputil.DumpRequest(r, true)
-	if err != nil {
-		fmt.Println("Error dumping request:", err)
-		return
-	}
-	fmt.Println(string(output))
-}
-
 // JSON responds with the first non-nil payload, formats error messages
 func JSON(w http.ResponseWriter, responses ...interface{}) {
 	respond := func(payload interface{}) {
 		var result []byte
 		var err error
 		encode := func(payload interface{}) ([]byte, error) {
-			// json, err := json.Marshal(payload)
-			return json.MarshalIndent(payload, "", "\t")
+			if config.Pretty {
+				return json.MarshalIndent(payload, "", "\t")
+			}
+			return json.Marshal(payload)
 		}
 		switch value := payload.(type) {
 		case errorMessage:
@@ -82,8 +104,7 @@ func JSON(w http.ResponseWriter, responses ...interface{}) {
 			}{value})
 		}
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			result, _ = encode(Error(errors.WithStack(err)))
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(result)
