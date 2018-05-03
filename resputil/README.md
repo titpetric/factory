@@ -143,7 +143,7 @@ request. Depending on what works for you, each stage individually can produce an
 a `func() error` declaration like shown here. If a non-empty value is returned, it will
 be encoded into JSON and written to the HTTP output.
 
-The pattern of use also allows a more functional approach to what you're outputting. For example,
+This pattern of use also allows a more functional approach to what you're responding with. For example,
 if you favor something closer to an ORM approach, then you could do something more similar to this:
 
 ~~~go

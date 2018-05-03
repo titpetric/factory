@@ -70,7 +70,7 @@ func errorResponse(err ...error) errorMessage {
 	return response
 }
 
-// Success returns a structured sucess message for API responses
+// Success returns a structured success message for API responses
 func Success(success ...string) successMessage {
 	response := successMessage{}
 	response.Success.Message = "OK"
@@ -80,6 +80,7 @@ func Success(success ...string) successMessage {
 	return response
 }
 
+// OK returns the default Success message
 func OK() successMessage {
 	return Success()
 }
