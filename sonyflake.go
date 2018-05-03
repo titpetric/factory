@@ -5,10 +5,12 @@ import (
 	"time"
 )
 
+// SonyflakeFactory is a configuration struct
 type SonyflakeFactory struct {
 	*sonyflake.Sonyflake
 }
 
+// Sonyflake is the active ID generator instance
 var Sonyflake *SonyflakeFactory
 
 func init() {
