@@ -136,6 +136,13 @@ type DB struct {
 	Profiler DatabaseProfiler
 }
 
+// Quiet will return a DB handle without a profiler (throw-away)
+func (r *DB) Quiet() *DB {
+	return &DB{
+		DB: r.DB,
+	}
+}
+
 // SetFields will provide a string with SQL named bindings from a string slice
 func (r *DB) SetFields(fields []string) string {
 	idx := 0
