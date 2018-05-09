@@ -71,6 +71,11 @@ func TestTests(t *testing.T) {
 		testCase("error stdlib nil", func() interface{} { return func() error { return nil }() }(), `{"response":false}`)
 	}
 
+	testCase("func json nil", func() ([]byte, error) { return json.Marshal(nil) }, `null`)
+	testCase("func json false", func() ([]byte, error) { return json.Marshal(false) }, `false`)
+	testCase("func json 0", func() ([]byte, error) { return json.Marshal(0) }, `0`)
+	testCase("func json empty string", func() ([]byte, error) { return json.Marshal("") }, `""`)
+
 	testCase("custom struct", struct {
 		Name string `json:"name"`
 	}{"Tit Petric"}, `{"response":{"name":"Tit Petric"}}`)

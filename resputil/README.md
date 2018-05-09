@@ -17,11 +17,16 @@ The `response` variadic parameter may be any of the following:
 - interface
 - func() error
 - func() (interface{}, error)
+- func() ([]byte, error)
 
 It will output the first non-empty value. In the case where the result is taken
 from a `interface{}, error` return, it will first output the error if it's not
 empty, and then output the value, *even if empty*. For all other cases it will
 skip to the next item in the responses parameter.
+
+A parameter of the type of `func() ([]byte, error)` will not return a wrapped structure.
+It's assumed the `[]byte` result is an as-is payload which should be returned. A typical
+use case is to return the output of `json.Marshal` which matches this signature.
 
 The motivation behind it is to provide more reasonable error handling, when you
 want to break out of your function with less code. It's in part an attempt to get

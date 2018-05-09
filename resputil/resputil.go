@@ -97,6 +97,8 @@ func JSON(w http.ResponseWriter, responses ...interface{}) {
 			return json.Marshal(payload)
 		}
 		switch value := payload.(type) {
+		case []byte:
+			result = value
 		case error:
 			// main key is "error"
 			result, err = encode(errorResponse(errors.WithStack(value)))
@@ -121,6 +123,9 @@ func JSON(w http.ResponseWriter, responses ...interface{}) {
 		case nil:
 			// this will match a nil error
 			continue
+		case func() ([]byte, error):
+			result, err := value()
+			JSON(w, err, result)
 		case func() (interface{}, error):
 			result, err := value()
 			JSON(w, err, result)
