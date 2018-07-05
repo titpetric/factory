@@ -60,12 +60,14 @@ func init() {
 // be applied, and your custom settings will be honored.
 func (r *DatabaseFactory) Add(name string, config interface{}) {
 	switch val := config.(type) {
+	case *string:
+		r.credentials[name] = &DatabaseCredential{DSN: *val}
 	case string:
 		r.credentials[name] = &DatabaseCredential{DSN: val}
 	case DatabaseCredential:
 		r.credentials[name] = &val
 	default:
-		panic("factory.Database.Add can take config as string|factory.DatabaseCredential")
+		panic("factory.Database.Add can take config as string|*string|factory.DatabaseCredential")
 	}
 }
 
