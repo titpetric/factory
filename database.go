@@ -120,12 +120,12 @@ func (r *DatabaseFactory) Get(dbName ...string) (*DB, error) {
 		}
 		dsn, _ := r.GetDSN(name)
 		if dsn != "" {
-			handle, err := sqlx.Open("mysql", dsn)
+			handle, err := sqlx.Connect("mysql", dsn)
 			if err != nil {
 				return nil, err
 			}
 			r.instances[name] = &DB{handle, nil}
-			return r.instances[name], r.instances[name].Ping()
+			return r.instances[name], nil
 		}
 	}
 	return nil, fmt.Errorf("No configuration found for database: %v", names)
