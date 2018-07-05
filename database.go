@@ -125,7 +125,7 @@ func (r *DatabaseFactory) Get(dbName ...string) (*DB, error) {
 				return nil, err
 			}
 			r.instances[name] = &DB{handle, nil}
-			return r.instances[name], nil
+			return r.instances[name], r.instances[name].Ping()
 		}
 	}
 	return nil, fmt.Errorf("No configuration found for database: %v", names)
