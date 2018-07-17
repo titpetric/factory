@@ -280,6 +280,27 @@ func (r *DB) Update(table string, args interface{}, keys ...string) error {
 	return err
 }
 
+// Update is a helper function which will issue an `update` statement to the db
+func (r *DB) Delete(table string, args interface{}, keys ...string) error {
+	var err error
+	if len(keys) == 0 {
+		return errors.New("Full-table delete not supported")
+	}
+	set := r.setMap(args)
+	setWhere := make(map[string]string)
+	for _, key := range keys {
+		value, ok := set[key]
+		if !ok {
+			return errors.New("Can't update table " + table + " by key " + key + " (no such field in struct)")
+		}
+		delete(set, key)
+		setWhere[key] = value
+	}
+	query := "delete " + table + " where " + r.setImplode(" AND ", setWhere)
+	_, err = r.NamedExec(query, args)
+	return err
+}
+
 // Replace is a helper function which will issue an `replace` statement to the database
 func (r *DB) Replace(table string, args interface{}) error {
 	var err error
