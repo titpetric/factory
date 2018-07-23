@@ -1,6 +1,7 @@
 package factory
 
 import (
+	"context"
 	"testing"
 )
 
@@ -16,6 +17,15 @@ func TestDatabase(t *testing.T) {
 	assert(db.Profiler == nil, "DB profiler expected nil")
 
 	db.Profiler = &DatabaseProfilerStdout{}
+
+	ctxdb := db.With(context.WithValue(context.Background(), "foo", "bar"))
+	if ctxvalue := ctxdb.ctx.Value("foo"); ctxvalue == nil {
+		t.Errorf("Expected context with value foo")
+	} else {
+		if ctxvalue.(string) != "bar" {
+			t.Errorf("Expected context with value foo=bar")
+		}
+	}
 
 	assert(db.Quiet().Profiler == nil, "DB quiet profiler expected nil")
 
