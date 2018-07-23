@@ -106,6 +106,23 @@ func TestTests(t *testing.T) {
 	}
 }`)
 
+	var loggedError error
+	SetConfig(Options{
+		Pretty: false,
+		Logger: func(err error) {
+			loggedError = err
+		},
+	})
+	testCase("logging error", errors.New("Hello world"), `{"error":{"message":"Hello world"}}`)
+	if loggedError.Error() != "Hello world" {
+		t.Errorf("Unexpected error: Hello world != '%s'", loggedError)
+	}
+
+	SetConfig(Options{
+		Pretty: true,
+		Trace:  true,
+	})
+
 	// Test internal encoding error (this is really your own fault for passing chan's to json encode)
 	{
 		resp := testResponse(make(chan int))
