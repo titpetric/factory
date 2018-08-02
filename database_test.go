@@ -60,6 +60,18 @@ func TestDatabase(t *testing.T) {
 		assert(i == "id=:id, name=:name" || i == "name=:name, id=:id", "Unexpected set() result: %s", i)
 	}
 	{
+		i := db.set(&dbStruct, "id")
+		assert(i == "id=:id", "Unexpected set() result with allowed=[id]: %s", i)
+	}
+	{
+		i := db.set(&dbStruct, "id", "name")
+		assert(i == "id=:id, name=:name" || i == "name=:name, id=:id", "Unexpected set() result with allowed=[id,name]: %s", i)
+	}
+	{
+		i := db.set(&dbStruct)
+		assert(i == "id=:id, name=:name" || i == "name=:name, id=:id", "Unexpected set() result: %s", i)
+	}
+	{
 		i := db.setImplode(", ", set)
 		assert(i == "id=:id, name=:name" || i == "name=:name, id=:id", "Unexpected setImplode() 1 result: %s", i)
 	}
