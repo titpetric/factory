@@ -3,6 +3,8 @@ package factory
 import (
 	"context"
 	"testing"
+
+	"github.com/jmoiron/sqlx"
 )
 
 func TestDatabase(t *testing.T) {
@@ -12,9 +14,12 @@ func TestDatabase(t *testing.T) {
 		}
 	}
 
-	db := DB{}
+	db := &DB{}
 	assert(db.DB == nil, "DB instance expected nil")
 	assert(db.Profiler == nil, "DB profiler expected nil")
+
+	// check that db conforms to execer interface
+	var _ sqlx.Execer = db
 
 	db.Profiler = &DatabaseProfilerStdout{}
 
