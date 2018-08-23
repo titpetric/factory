@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -37,11 +38,20 @@ func TestProfilers(t *testing.T) {
 	{
 		ctx := DatabaseProfilerContext{}.new("test123", "test456", 789)
 		mp := DatabaseProfilerMemory{}
-		mp.Post(ctx)
-		mp.Post(ctx)
 
-		if len(mp.Log) != 2 {
-			t.Errorf("Expected to log 2 queries, got %d", len(mp.Log))
+		samples := 100
+		var wg sync.WaitGroup
+		wg.Add(samples)
+		for i := 0; i < samples; i++ {
+			go func() {
+				mp.Post(ctx)
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+
+		if len(mp.Log) != samples {
+			t.Errorf("Expected to log %d queries, got %d", samples, len(mp.Log))
 		}
 
 		captureOutput(func() {
