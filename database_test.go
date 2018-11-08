@@ -3,6 +3,7 @@ package factory
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -35,10 +36,19 @@ func TestDatabase(t *testing.T) {
 	assert(db.Quiet().Profiler == nil, "DB quiet profiler expected nil")
 
 	dbStruct := struct {
-		ID    int    `db:"id"`
-		Name  string `db:"name,omitempty"`
-		Title string `db:"-"`
-	}{123, "Tit Petric", "Sir"}
+		ID    int        `db:"id"`
+		Name  string     `db:"name,omitempty"`
+		Title string     `db:"-"`
+		Date  *time.Time `db:"modified_at"`
+	}{123, "Tit Petric", "Sir", nil}
+
+	dbTime := struct {
+		ID   int        `db:"id"`
+		Time *time.Time `db:"modified_at"`
+	}{123, nil}
+
+	now := time.Now()
+	dbTime.Time = &now
 
 	set := db.setMap(&dbStruct)
 
@@ -63,6 +73,19 @@ func TestDatabase(t *testing.T) {
 	{
 		i := db.set(&dbStruct)
 		assert(i == "id=:id, name=:name" || i == "name=:name, id=:id", "Unexpected set() result: %s", i)
+	}
+	{
+		i := db.set(&dbTime)
+		assert(i == "id=:id, modified_at=:modified_at" || i == "modified_at=:modified_at, id=:id", "Unexpected set() result: %s", i)
+	}
+	{
+		i := db.set(&dbTime, "id")
+		assert(i == "id=:id", "Unexpected set() result with allowed=[id]: %s", i)
+	}
+	{
+		dbTime.Time = nil
+		i := db.set(&dbTime)
+		assert(i == "id=:id", "Unexpected set() result with nil modified_at: %s", i)
 	}
 	{
 		i := db.set(&dbStruct, "id")

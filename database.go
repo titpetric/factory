@@ -353,7 +353,18 @@ func (r *DB) setMap(data interface{}, allowed ...string) map[string]string {
 	for i := 0; i < length; i++ {
 		fieldType := message_value.Type().Field(i)
 		if tag := r.tag(fieldType.Tag.Get("db")); tag != "" {
-			set[tag] = ":" + tag
+			switch t := message_value.Field(i).Interface().(type) {
+			default:
+				// add non-pointer values to set
+				if reflect.ValueOf(t).Kind() != reflect.Ptr {
+					set[tag] = ":" + tag
+					break
+				}
+				// add pointer values which are != nil
+				if !reflect.ValueOf(t).IsNil() {
+					set[tag] = ":" + tag
+				}
+			}
 		}
 	}
 
