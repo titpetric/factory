@@ -2,21 +2,82 @@ package factory
 
 import (
 	"context"
+	"log"
 	"testing"
 
 	"github.com/jmoiron/sqlx"
 )
 
-func TestDatabase(t *testing.T) {
-	assert := func(result bool, format string, params ...interface{}) {
-		if !result {
-			t.Errorf(format, params...)
-		}
+func assert(t *testing.T, result bool, format string, params ...interface{}) {
+	if !result {
+		t.Errorf(format, params...)
 	}
+}
 
+func TestTransactions(t *testing.T) {
+	var err error
+
+	Database.Add("default", "factory:factory@tcp(factory-db:3306)/factory?collation=utf8mb4_general_ci")
+
+	ctx1 := context.WithValue(context.Background(), "testing", true)
+	ctx2 := context.Background()
+
+	db1 := Database.MustGet().With(ctx1)
+	db1.Profiler = &Database.ProfilerStdout
+	db2 := Database.MustGet().With(ctx2)
+	db2.Profiler = &Database.ProfilerStdout
+
+	// set up db tables
+	_, err = db1.Exec("create table innodb_deadlock_maker_a(a int primary key, b varchar(255)) engine=innodb;")
+	assert(t, err == nil, "error: %+v", err)
+	_, err = db1.Exec("insert into innodb_deadlock_maker_a (a, b) values (1, ''), (2, '');")
+	assert(t, err == nil, "error: %+v", err)
+
+	done := make(chan bool)
+
+	// first deadlock window
+	go func() {
+		err = db1.Transaction(func() error {
+			if _, err := db1.Exec("/* db1 */ select * from innodb_deadlock_maker_a where a=1 for share"); err != nil {
+				return err
+			}
+			if _, err := db1.Exec("/* db1 */ select sleep(0.2)"); err != nil {
+				return err
+			}
+			if _, err := db1.Exec("/* db1 */ delete from innodb_deadlock_maker_a where a=1"); err != nil {
+				return err
+			}
+			return nil
+		})
+		assert(t, err == nil, "db1 error: %+v", err)
+		log.Println("Finished db1")
+		done <- true
+	}()
+
+	// second deadlock window
+	go func() {
+		err = db2.Transaction(func() error {
+			if _, err := db2.Exec("/* db2 */ select sleep(0.1)"); err != nil {
+				return err
+			}
+			if _, err := db2.Exec("/* db2 */ delete from innodb_deadlock_maker_a where a=1"); err != nil {
+				return err
+			}
+			return nil
+		})
+		assert(t, err == nil, "db2 error: %+v", err)
+		log.Println("Finished db2")
+		done <- true
+	}()
+
+	<-done
+	<-done
+}
+
+func xTestDatabase(t *testing.T) {
 	db := &DB{}
-	assert(db.DB == nil, "DB instance expected nil")
-	assert(db.Profiler == nil, "DB profiler expected nil")
+	assert(t, db.DB == nil, "DB instance expected nil")
+	assert(t, db.Profiler == nil, "DB profiler expected nil")
 
 	// check that db conforms to execer interface
 	var _ sqlx.Execer = db
@@ -32,7 +93,7 @@ func TestDatabase(t *testing.T) {
 		}
 	}
 
-	assert(db.Quiet().Profiler == nil, "DB quiet profiler expected nil")
+	assert(t, db.Quiet().Profiler == nil, "DB quiet profiler expected nil")
 
 	dbStruct := struct {
 		ID    int    `db:"id"`
@@ -50,9 +111,9 @@ func TestDatabase(t *testing.T) {
 	{
 		check := func(key string) {
 			val, ok := set[key]
-			assert(ok, "Expected existance of set[%s]", key)
+			assert(t, ok, "Expected existance of set[%s]", key)
 			if ok {
-				assert(val == ":"+key, "Expected value of set[%s] = :%s, got %s", key, key, val)
+				assert(t, val == ":"+key, "Expected value of set[%s] = :%s, got %s", key, key, val)
 			}
 		}
 		check("id")
@@ -62,31 +123,31 @@ func TestDatabase(t *testing.T) {
 	// check set functionality
 	{
 		i := db.set(&dbStruct)
-		assert(i == "id=:id, name=:name" || i == "name=:name, id=:id", "Unexpected set() result: %s", i)
+		assert(t, i == "id=:id, name=:name" || i == "name=:name, id=:id", "Unexpected set() result: %s", i)
 	}
 	{
 		i := db.set(&dbStruct, "id")
-		assert(i == "id=:id", "Unexpected set() result with allowed=[id]: %s", i)
+		assert(t, i == "id=:id", "Unexpected set() result with allowed=[id]: %s", i)
 	}
 	{
 		i := db.set(&dbStruct, "id", "name")
-		assert(i == "id=:id, name=:name" || i == "name=:name, id=:id", "Unexpected set() result with allowed=[id,name]: %s", i)
+		assert(t, i == "id=:id, name=:name" || i == "name=:name, id=:id", "Unexpected set() result with allowed=[id,name]: %s", i)
 	}
 	{
 		i := db.set(&dbStruct)
-		assert(i == "id=:id, name=:name" || i == "name=:name, id=:id", "Unexpected set() result: %s", i)
+		assert(t, i == "id=:id, name=:name" || i == "name=:name, id=:id", "Unexpected set() result: %s", i)
 	}
 	{
 		i := db.setImplode(", ", set)
-		assert(i == "id=:id, name=:name" || i == "name=:name, id=:id", "Unexpected setImplode() 1 result: %s", i)
+		assert(t, i == "id=:id, name=:name" || i == "name=:name, id=:id", "Unexpected setImplode() 1 result: %s", i)
 	}
 	{
 		i := db.setImplode(" AND ", set)
-		assert(i == "id=:id AND name=:name" || i == "name=:name AND id=:id", "Unexpected setImplode() 2 result: %s", i)
+		assert(t, i == "id=:id AND name=:name" || i == "name=:name AND id=:id", "Unexpected setImplode() 2 result: %s", i)
 	}
 	{
 		delete(set, "name")
 		i := db.setImplode(" AND ", set)
-		assert(i == "id=:id", "Unexpected setImplode() 3 result: %s", i)
+		assert(t, i == "id=:id", "Unexpected setImplode() 3 result: %s", i)
 	}
 }
