@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/jmoiron/sqlx"
+
+	"github.com/titpetric/factory/logger"
 )
 
 func assert(t *testing.T, result bool, format string, params ...interface{}) {
@@ -23,9 +25,9 @@ func TestTransactions(t *testing.T) {
 	ctx2 := context.Background()
 
 	db1 := Database.MustGet().With(ctx1)
-	db1.Profiler = &Database.ProfilerStdout
+	db1.SetLogger(logger.Default{})
 	db2 := Database.MustGet().With(ctx2)
-	db2.Profiler = &Database.ProfilerStdout
+	db2.SetLogger(logger.Default{})
 
 	// set up db tables
 	_, err = db1.Exec("create table innodb_deadlock_maker_a(a int primary key, b varchar(255)) engine=innodb;")
@@ -77,12 +79,9 @@ func TestTransactions(t *testing.T) {
 func xTestDatabase(t *testing.T) {
 	db := &DB{}
 	assert(t, db.DB == nil, "DB instance expected nil")
-	assert(t, db.Profiler == nil, "DB profiler expected nil")
 
 	// check that db conforms to execer interface
 	var _ sqlx.Execer = db
-
-	db.Profiler = &DatabaseProfilerStdout{}
 
 	ctxdb := db.With(context.WithValue(context.Background(), "foo", "bar"))
 	if ctxvalue := ctxdb.ctx.Value("foo"); ctxvalue == nil {
@@ -92,8 +91,6 @@ func xTestDatabase(t *testing.T) {
 			t.Errorf("Expected context with value foo=bar")
 		}
 	}
-
-	assert(t, db.Quiet().Profiler == nil, "DB quiet profiler expected nil")
 
 	dbStruct := struct {
 		ID    int    `db:"id"`
