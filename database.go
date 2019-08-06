@@ -160,7 +160,7 @@ type DB struct {
 	Tx     *sqlx.Tx
 	TxOpts *sql.TxOptions
 
-	Logger logger.Logger
+	logger logger.Logger
 }
 
 // Quiet will return a DB handle without a logger
@@ -183,13 +183,13 @@ func (r *DB) With(ctx context.Context) *DB {
 		r.inTx,
 		r.Tx,
 		r.TxOpts,
-		r.Logger,
+		r.logger,
 	}
 }
 
 // Set a custom logger
 func (r *DB) SetLogger(logger logger.Logger) {
-	r.Logger = logger
+	r.logger = logger
 }
 
 // Begin will create a transaction in the DB with a context
@@ -234,14 +234,14 @@ func (r *DB) Transaction(callback func() error) (err error) {
 
 		try++
 		if try > 3 {
-			r.Logger.Log(r.ctx, fmt.Sprintf("Retried transaction %d times, aborting", try-1))
+			r.logger.Log(r.ctx, fmt.Sprintf("Retried transaction %d times, aborting", try-1))
 			break
 		}
 
 		// Break out if the causer is not a MySQL error
 		cause, ok := (errors.Cause(err)).(*mysql.MySQLError)
 		if !ok {
-			r.Logger.Log(r.ctx, "Returned error cause is not a MySQLError", logger.NewField("err", err))
+			r.logger.Log(r.ctx, "Returned error cause is not a MySQLError", logger.NewField("err", err))
 			break
 		}
 
@@ -249,13 +249,13 @@ func (r *DB) Transaction(callback func() error) (err error) {
 		//   - 1205: lock within transaction (unit tested),
 		//   - 1213: deadlock found
 		if cause.Number == 1205 || cause.Number == 1213 {
-			r.Logger.Log(r.ctx, "Retrying transaction", logger.NewField("try", try), logger.NewField("cause", cause))
+			r.logger.Log(r.ctx, "Retrying transaction", logger.NewField("try", try), logger.NewField("cause", cause))
 			r.Rollback()
 			time.Sleep(50 * time.Millisecond)
 			continue
 		}
 
-		r.Logger.Log(r.ctx, "Can't handle transaction error, aborting")
+		r.logger.Log(r.ctx, "Can't handle transaction error, aborting")
 		break
 	}
 
@@ -557,5 +557,5 @@ func (r *DB) Log(callback func(), query string, args ...interface{}) {
 	start := time.Now()
 	callback()
 	duration := time.Since(start).Seconds()
-	r.Logger.Log(r.ctx, query, logger.NewField("duration", duration), logger.NewField("args", args))
+	r.logger.Log(r.ctx, query, logger.NewField("duration", duration), logger.NewField("args", args))
 }
