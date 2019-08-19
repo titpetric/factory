@@ -1,3 +1,5 @@
+// +build integration
+
 package factory
 
 import (
@@ -18,8 +20,6 @@ func assert(t *testing.T, result bool, format string, params ...interface{}) {
 
 func TestTransactions(t *testing.T) {
 	var err error
-
-	Database.Add("default", "factory:factory@tcp(factory-db:3306)/factory?collation=utf8mb4_general_ci")
 
 	ctx1 := context.WithValue(context.Background(), "testing", true)
 	ctx2 := context.Background()
@@ -76,7 +76,7 @@ func TestTransactions(t *testing.T) {
 	<-done
 }
 
-func xTestDatabase(t *testing.T) {
+func TestDatabase(t *testing.T) {
 	db := &DB{}
 	assert(t, db.DB == nil, "DB instance expected nil")
 
