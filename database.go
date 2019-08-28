@@ -62,6 +62,11 @@ func init() {
 // If your passed DSN will include any of these options, the default values will not
 // be applied, and your custom settings will be honored.
 func (r *DatabaseFactory) Add(name string, credentials DatabaseCredential) {
+	credentials.DSN = r.CleanDSN(credentials.DriverName, credentials.DSN)
+	r.credentials[name] = credentials
+}
+
+func (r *DatabaseFactory) CleanDSN(driverName string, dsn string) string {
 	addOption := func(s, match, option string) string {
 		if !strings.Contains(s, match) {
 			s += option
@@ -69,13 +74,12 @@ func (r *DatabaseFactory) Add(name string, credentials DatabaseCredential) {
 		return s
 	}
 
-	credentials.DSN = addOption(credentials.DSN, "?", "?")
-	credentials.DSN = addOption(credentials.DSN, "collation=", "&collation=utf8_general_ci")
-	credentials.DSN = addOption(credentials.DSN, "parseTime=", "&parseTime=true")
-	credentials.DSN = addOption(credentials.DSN, "loc=", "&loc=Local")
-	credentials.DSN = strings.Replace(credentials.DSN, "?&", "?", 1)
-
-	r.credentials[name] = credentials
+	dsn = addOption(dsn, "?", "?")
+	dsn = addOption(dsn, "collation=", "&collation=utf8_general_ci")
+	dsn = addOption(dsn, "parseTime=", "&parseTime=true")
+	dsn = addOption(dsn, "loc=", "&loc=Local")
+	dsn = strings.Replace(dsn, "?&", "?", 1)
+	return dsn
 }
 
 // getCredentials returns the DatabaseCredential{} for a given db name
