@@ -13,8 +13,9 @@ import (
 
 // DatabaseConnectionOptions is a configuration struct for connection retry
 type DatabaseConnectionOptions struct {
-	DSN    string
-	Logger string
+	DSN        string
+	DriverName string
+	Logger     string
 
 	Retries        int
 	RetryTimeout   time.Duration
@@ -26,7 +27,10 @@ var (
 )
 
 func (df *DatabaseFactory) TryToConnect(ctx context.Context, name string, options *DatabaseConnectionOptions) (db *DB, err error) {
-	df.Add(name, options.DSN)
+	df.Add(name, DatabaseCredential{
+		DSN:        options.DSN,
+		DriverName: options.DriverName,
+	})
 
 	var (
 		connErrCh = make(chan error, 1)

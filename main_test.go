@@ -14,8 +14,9 @@ func TestMain(m *testing.M) {
 	log.SetOutput(os.Stdout)
 
 	options := &DatabaseConnectionOptions{
-		DSN:    "factory:factory@tcp(factory-db:3306)/factory?collation=utf8mb4_general_ci",
-		Logger: "stdout",
+		DSN:        "factory:factory@tcp(factory-db:3306)/factory?collation=utf8mb4_general_ci",
+		DriverName: "mysql",
+		Logger:     "stdout",
 
 		Retries:        100,
 		RetryTimeout:   time.Second,
